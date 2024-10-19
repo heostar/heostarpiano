@@ -1,5 +1,6 @@
 from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip, TextClip, ImageSequenceClip, concatenate_videoclips
 from moviepy.video.fx import resize
+from pathlib import Path
 import json
 import argparse
 import math
@@ -21,13 +22,13 @@ class Synthesia:
     # FallingNotesXs
     # IsWhiteKeyArray
 
-    def __init__(self, bpm, fallingNotesSpeed, fallingHeight, defaultSpeed, midi_path):
+    def __init__(self, bpm, fallingNotesSpeed, fallingHeight, defaultSpeed, midiPath):
         self.FallingHeight = fallingHeight
         self.DefaultSpeed = defaultSpeed
         self.Bpm = bpm
         self.LongNoteThreshold = 60.0/bpm*1.5 # in seconds
         self.FallingNotesSpeed = fallingNotesSpeed
-        self.MidiPath = midi_path
+        self.MidiPath = midiPath
 
         # Some constants
         KeyMiddlesInOctave = [18.5, 34, 55.5, 77, 92.5, 129.5, 142.5, 166.5, 185, 203.5, 227, 240.5]
@@ -400,7 +401,7 @@ class Synthesia:
         # Add dissolve transitions (crossfade) between clips
         return concatenate_videoclips(clips, method="compose") 
 
-    def production_mode(self, youtube_url=None):
+    def production_mode(self, file_path, youtube_url=None):
         
         # Read json file
         with open(self.MidiPath, 'r') as json_file:
@@ -458,15 +459,15 @@ class Synthesia:
             bga_clip = bga_clip.resize(height=650).set_position(('center',174))
             bga_clip = bga_clip.set_start(note_start_time)
             final_mix = CompositeVideoClip([bga_clip, composite], size=(1920,1080))
-            final_mix.write_videofile('synthesia_prod.mp4', threads=4)
+            final_mix.write_videofile(file_path, threads=4)
 
             # Delete youtube bga file
             os.remove(youtube_video_path)
         else:
-            composite.write_videofile('synthesia_prod.mp4', threads=4)
+            composite.write_videofile(file_path, threads=4)
 
 
-    def tutorial_mode(self, isCodeMajor, script_path):
+    def tutorial_mode(self, file_path, isCodeMajor, script_path):
         
         # FLIP HAND ? False for Track 1 LH and Track 2 RH, otherwise True
         FLIP_HAND = True
@@ -572,7 +573,7 @@ class Synthesia:
         video_layers.extend(key_layers)
         
         composite = CompositeVideoClip(video_layers, size=(1920,1080))
-        composite.write_videofile('synthesia_tutorial.mp4', fps=60, threads=8)
+        composite.write_videofile(file_path, fps=60, threads=8)
     
     
 
@@ -634,16 +635,19 @@ def main():
     synthesia_obj = Synthesia(args.b, FallingNotesSpeed, FallingHeight, DefaultSpeed, args.m)
 
     # Process command line options
+    outputFolder = Path("./output")
+    outputFolder.mkdir(parents=True, exist_ok=True)
     if args.t:
         print('Tutorial mode activated')
-        synthesia_obj.tutorial_mode(args.c, args.s)
+        synthesia_obj.tutorial_mode(str(outputFolder / "synthesia_tutorial.mp4"), args.c, args.s)
 
     elif args.p:
         print('Production mode activated')
+        
         if args.y:
-            synthesia_obj.production_mode(youtube_url=args.y)
+            synthesia_obj.production_mode(str(outputFolder / 'synthesia_prod.mp4'), youtube_url=args.y)
         else:
-            synthesia_obj.production_mode()
+            synthesia_obj.production_mode(str(outputFolder / 'synthesia_prod.mp4'))
 
 if __name__ == "__main__":
     main()
