@@ -47,6 +47,7 @@ Below is the example command. Assuming that you have activated the virtual envir
 python scripts/synthesia.py -t -m "/path/to/your/midi/json/file" -c 1 -s "/path/to/your/tutorial/script"
 ```
 To exaplain the options,
+```
 -t: Tutorial mode
 -m: Path to the midi json file
 -c: code major (1) or minor (0) for key name printout
